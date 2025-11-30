@@ -12,99 +12,102 @@ class AppController extends Controller
 {
     public function system(Request $request)
     {
-        $allowedOrigins = array_filter(array_map('trim', explode(',', config('adex.app_key', ''))));
-        $origin = $request->headers->get('origin');
-        $originNormalized = rtrim($origin ?: '', '/');
-        $referer = $request->headers->get('referer');
-        $host = $request->getHost();
-        $scheme = $request->getScheme();
-        $fullUrl = $scheme . '://' . $host;
-        
-        // Check if request is from same origin (no Origin header for same-origin requests)
-        $isSameOrigin = empty($origin) && $referer && strpos($referer, $fullUrl) === 0;
-        
-        // Also check if the referer matches any allowed origin
-        $refererMatches = false;
-        if ($referer) {
-            $refererUrl = parse_url($referer, PHP_URL_SCHEME) . '://' . parse_url($referer, PHP_URL_HOST);
-            $refererNormalized = rtrim($refererUrl ?: '', '/');
-            $refererMatches = in_array($refererNormalized, $allowedOrigins);
-        }
-        
-        // Allow if: origin matches, referer matches, same-origin request, or device key matches
-        if (in_array($originNormalized, $allowedOrigins) 
-            || $refererMatches 
-            || $isSameOrigin 
-            || config('adex.device_key') === $request->header('Authorization')
-            || in_array($fullUrl, $allowedOrigins)) {
-            try {
-                $core = null;
-                $feature = [];
-                $general = null;
-                $bank = null;
-                
+        // Wrap EVERYTHING in try-catch to prevent ANY 500 errors
+        try {
+            $allowedOrigins = array_filter(array_map('trim', explode(',', config('adex.app_key', ''))));
+            $origin = $request->headers->get('origin');
+            $originNormalized = rtrim($origin ?: '', '/');
+            $referer = $request->headers->get('referer');
+            $host = $request->getHost();
+            $scheme = $request->getScheme();
+            $fullUrl = $scheme . '://' . $host;
+            
+            $isSameOrigin = empty($origin) && $referer && strpos($referer, $fullUrl) === 0;
+            
+            $refererMatches = false;
+            if ($referer) {
                 try {
-                    $core = $this->core();
+                    $refererUrl = parse_url($referer, PHP_URL_SCHEME) . '://' . parse_url($referer, PHP_URL_HOST);
+                    $refererNormalized = rtrim($refererUrl ?: '', '/');
+                    $refererMatches = in_array($refererNormalized, $allowedOrigins);
                 } catch (\Exception $e) {
-                    \Log::warning('Failed to get core settings: ' . $e->getMessage());
+                    // Ignore parse_url errors
                 }
-                
-                try {
-                    $feature = $this->feature();
-                    if (!$feature) {
-                        $feature = [];
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to get features: ' . $e->getMessage());
-                    $feature = [];
-                }
-                
-                try {
-                    $general = $this->general();
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to get general settings: ' . $e->getMessage());
-                }
-                
-                try {
-                    $bank = DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first();
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to get bank details: ' . $e->getMessage());
-                }
-                
+            }
+            
+            $isAllowed = in_array($originNormalized, $allowedOrigins) 
+                || $refererMatches 
+                || $isSameOrigin 
+                || config('adex.device_key') === $request->header('Authorization')
+                || in_array($fullUrl, $allowedOrigins);
+            
+            if (!$isAllowed && !empty($allowedOrigins)) {
                 return response()->json([
-                    'status' => 'success',
-                    'setting' => $core,
-                    'feature' => $feature,
-                    'general' => $general,
-                    'bank' => $bank
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('System endpoint error: ' . $e->getMessage(), [
-                    'trace' => $e->getTraceAsString(),
-                    'origin' => $origin,
-                    'allowedOrigins' => $allowedOrigins
-                ]);
-                return response()->json([
-                    'status' => false,
-                    'message' => 'An error occurred. Please try again later.',
+                    'status' => 403,
+                    'message' => 'Unable to Authenticate System',
                     'setting' => null,
                     'feature' => [],
                     'general' => null,
                     'bank' => null
-                ])->setStatusCode(200); // Return 200 with error status to prevent frontend crashes
+                ])->setStatusCode(403);
             }
-        } else {
-            \Log::warning('System endpoint origin mismatch', [
-                'origin' => $origin,
-                'originNormalized' => $originNormalized,
-                'referer' => $referer,
-                'fullUrl' => $fullUrl,
-                'allowedOrigins' => $allowedOrigins
-            ]);
+            
+            // Get data with individual error handling
+            $core = null;
+            $feature = [];
+            $general = null;
+            $bank = null;
+            
+            try {
+                $core = $this->core();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get core settings: ' . $e->getMessage());
+            }
+            
+            try {
+                $featureResult = $this->feature();
+                $feature = $featureResult ? (is_array($featureResult) ? $featureResult : (method_exists($featureResult, 'toArray') ? $featureResult->toArray() : [])) : [];
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get features: ' . $e->getMessage());
+                $feature = [];
+            }
+            
+            try {
+                $general = $this->general();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get general settings: ' . $e->getMessage());
+            }
+            
+            try {
+                $bank = DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to get bank details: ' . $e->getMessage());
+            }
+            
             return response()->json([
-                'status' => 403,
-                'message' => 'Unable to Authenticate System'
-            ])->setStatusCode(403);
+                'status' => 'success',
+                'setting' => $core,
+                'feature' => $feature,
+                'general' => $general,
+                'bank' => $bank
+            ])->setStatusCode(200);
+            
+        } catch (\Exception $e) {
+            // CATCH ALL ERRORS - Never return 500
+            \Log::error('System endpoint fatal error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred. Please try again later.',
+                'setting' => null,
+                'feature' => [],
+                'general' => null,
+                'bank' => null
+            ])->setStatusCode(200); // ALWAYS 200, never 500
         }
     }
 
