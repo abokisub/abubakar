@@ -32,7 +32,10 @@ class AppController extends Controller
                 ])->setStatusCode(500);
             }
         } else {
-            return redirect(config('adex.error_500'));
+            return response()->json([
+                'status' => 403,
+                'message' => 'Unable to Authenticate System'
+            ])->setStatusCode(403);
         }
     }
 
@@ -502,6 +505,11 @@ class AppController extends Controller
                     'referer' => $referer,
                     'fullUrl' => $fullUrl,
                     'allowedOrigins' => $allowedOrigins
+                ]);
+                return response()->json([
+                    'status' => 403,
+                    'message' => 'Unable to Authenticate System'
+                ])->setStatusCode(403);
                 ]);
                 
                 return response()->json([

@@ -337,6 +337,9 @@ class AuthController extends Controller
                                 'user' => $user_details
                             ]);
                         } else if ($user->status == 1) {
+                            // Get user details with BellBank account info
+                            $user_details = $this->getUserDetailsWithBellBank($user);
+                            
                             // Check if user has pending OTP that needs verification
                             $hasPendingOtp = !empty($user->otp);
                             $otpExpired = false;
@@ -949,10 +952,9 @@ class AuthController extends Controller
                 }
             }
         } else {
-            return redirect(env('ERROR_500'));
             return response()->json([
                 'status' => 403,
-                'message' => 'unauntorized'
+                'message' => 'Unable to Authenticate System'
             ])->setStatusCode(403);
         }
     }
