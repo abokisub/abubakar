@@ -12,19 +12,49 @@ class AppController extends Controller
 {
     public function system(Request $request)
     {
-        $explode_url = explode(',', config('adex.app_key'));
-        if (in_array($request->headers->get('origin'), $explode_url)) {
+        $allowedOrigins = array_filter(array_map('trim', explode(',', config('adex.app_key', ''))));
+        $origin = $request->headers->get('origin');
+        $originNormalized = rtrim($origin ?: '', '/');
+        $referer = $request->headers->get('referer');
+        $host = $request->getHost();
+        $scheme = $request->getScheme();
+        $fullUrl = $scheme . '://' . $host;
+        
+        // Check if request is from same origin (no Origin header for same-origin requests)
+        $isSameOrigin = empty($origin) && $referer && strpos($referer, $fullUrl) === 0;
+        
+        // Also check if the referer matches any allowed origin
+        $refererMatches = false;
+        if ($referer) {
+            $refererUrl = parse_url($referer, PHP_URL_SCHEME) . '://' . parse_url($referer, PHP_URL_HOST);
+            $refererNormalized = rtrim($refererUrl ?: '', '/');
+            $refererMatches = in_array($refererNormalized, $allowedOrigins);
+        }
+        
+        // Allow if: origin matches, referer matches, same-origin request, or device key matches
+        if (in_array($originNormalized, $allowedOrigins) 
+            || $refererMatches 
+            || $isSameOrigin 
+            || config('adex.device_key') === $request->header('Authorization')
+            || in_array($fullUrl, $allowedOrigins)) {
             try {
+                $core = $this->core();
+                $feature = $this->feature();
+                $general = $this->general();
+                $bank = DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first();
+                
                 return response()->json([
                     'status' => 'success',
-                    'setting' => $this->core(),
-                    'feature' => $this->feature(),
-                    'general' => $this->general(),
-                    'bank' => DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first()
+                    'setting' => $core,
+                    'feature' => $feature,
+                    'general' => $general,
+                    'bank' => $bank
                 ]);
             } catch (\Exception $e) {
                 \Log::error('System endpoint error: ' . $e->getMessage(), [
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
+                    'origin' => $origin,
+                    'allowedOrigins' => $allowedOrigins
                 ]);
                 return response()->json([
                     'status' => false,
@@ -32,6 +62,13 @@ class AppController extends Controller
                 ])->setStatusCode(500);
             }
         } else {
+            \Log::warning('System endpoint origin mismatch', [
+                'origin' => $origin,
+                'originNormalized' => $originNormalized,
+                'referer' => $referer,
+                'fullUrl' => $fullUrl,
+                'allowedOrigins' => $allowedOrigins
+            ]);
             return response()->json([
                 'status' => 403,
                 'message' => 'Unable to Authenticate System'
