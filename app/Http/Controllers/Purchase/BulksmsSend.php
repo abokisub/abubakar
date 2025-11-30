@@ -1,0 +1,234 @@
+<?php
+
+namespace App\Http\Controllers\Purchase;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
+
+class  BulksmsSend extends Controller
+{
+    public static function Adex1($data)
+    {
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $api_website = DB::table('web_api')->first();
+            $adex_api = DB::table('adex_api')->first();
+            $accessToken = base64_encode($adex_api->adex1_username . ":" . $adex_api->adex1_password);
+            $paypload = array(
+                'sender' => $sendRequest->sender_name,
+                'number' => $sendRequest->correct_number,
+                'message' => $sendRequest->message,
+            );
+            $admin_details = [
+                'website_url' => $api_website->adex_website1,
+                'endpoint' => $api_website->adex_website1 . "/api/bulksms/",
+                'accessToken' => $accessToken
+            ];
+            $response = ApiSending::AdexApi($admin_details, $paypload);
+            if (!empty($response)) {
+
+                if ($response['status'] == 'success') {
+                    $plan_status = 'success';
+                } else if ($response['status'] == 'fail') {
+                    $plan_status = 'fail';
+                } else if ($response['status'] == 'process') {
+                    $plan_status = 'process';
+                } else {
+                    $plan_status = 'process';
+                }
+            } else {
+                $plan_status = null;
+            }
+            return $plan_status;
+        } else {
+            return 'fail';
+        }
+    }
+    public static function Adex2($data)
+    {
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $api_website = DB::table('web_api')->first();
+            $adex_api = DB::table('adex_api')->first();
+            $accessToken = base64_encode($adex_api->adex2_username . ":" . $adex_api->adex2_password);
+            $paypload = array(
+                'sender' => $sendRequest->sender_name,
+                'number' => $sendRequest->correct_number,
+                'message' => $sendRequest->message,
+            );
+            $admin_details = [
+                'website_url' => $api_website->adex_website2,
+                'endpoint' => $api_website->adex_website2 . "/api/bulksms/",
+                'accessToken' => $accessToken
+            ];
+            $response = ApiSending::AdexApi($admin_details, $paypload);
+            if (!empty($response)) {
+
+                if ($response['status'] == 'success') {
+                    $plan_status = 'success';
+                } else if ($response['status'] == 'fail') {
+                    $plan_status = 'fail';
+                } else if ($response['status'] == 'process') {
+                    $plan_status = 'process';
+                } else {
+                    $plan_status = 'process';
+                }
+            } else {
+                $plan_status = null;
+            }
+            return $plan_status;
+        } else {
+            return 'fail';
+        }
+    }
+    public static function Adex3($data)
+    {
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $api_website = DB::table('web_api')->first();
+            $adex_api = DB::table('adex_api')->first();
+            $accessToken = base64_encode($adex_api->adex3_username . ":" . $adex_api->adex3_password);
+            $paypload = array(
+                'sender' => $sendRequest->sender_name,
+                'number' => $sendRequest->correct_number,
+                'message' => $sendRequest->message,
+            );
+            $admin_details = [
+                'website_url' => $api_website->adex_website3,
+                'endpoint' => $api_website->adex_website5 . "/api/bulksms/",
+                'accessToken' => $accessToken
+            ];
+            $response = ApiSending::AdexApi($admin_details, $paypload);
+            if (!empty($response)) {
+
+                if ($response['status'] == 'success') {
+                    $plan_status = 'success';
+                } else if ($response['status'] == 'fail') {
+                    $plan_status = 'fail';
+                } else if ($response['status'] == 'process') {
+                    $plan_status = 'process';
+                } else {
+                    $plan_status = 'process';
+                }
+            } else {
+                $plan_status = null;
+            }
+            return $plan_status;
+        } else {
+            return 'fail';
+        }
+    }
+    public static function Adex4($data)
+    {
+
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $api_website = DB::table('web_api')->first();
+            $adex_api = DB::table('adex_api')->first();
+            $accessToken = base64_encode($adex_api->adex4_username . ":" . $adex_api->adex4_password);
+            $paypload = array(
+                'sender' => $sendRequest->sender_name,
+                'number' => $sendRequest->correct_number,
+                'message' => $sendRequest->message,
+            );
+            $admin_details = [
+                'website_url' => $api_website->adex_website4,
+                'endpoint' => $api_website->adex_website4 . "/api/bulksms/",
+                'accessToken' => $accessToken
+            ];
+            $response = ApiSending::AdexApi($admin_details, $paypload);
+            if (!empty($response)) {
+
+                if ($response['status'] == 'success') {
+                    $plan_status = 'success';
+                } else if ($response['status'] == 'fail') {
+                    $plan_status = 'fail';
+                } else if ($response['status'] == 'process') {
+                    $plan_status = 'process';
+                } else {
+                    $plan_status = 'process';
+                }
+            } else {
+                $plan_status = null;
+            }
+            return $plan_status;
+        } else {
+            return 'fail';
+        }
+    }
+    public static function Adex5($data)
+    {
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $api_website = DB::table('web_api')->first();
+            $adex_api = DB::table('adex_api')->first();
+            $accessToken = base64_encode($adex_api->adex5_username . ":" . $adex_api->adex5_password);
+            $paypload = array(
+                'sender' => $sendRequest->sender_name,
+                'number' => $sendRequest->correct_number,
+                'message' => $sendRequest->message,
+            );
+            $admin_details = [
+                'website_url' => $api_website->adex_website5,
+                'endpoint' => $api_website->adex_website5 . "/api/bulksms/",
+                'accessToken' => $accessToken
+            ];
+            $response = ApiSending::AdexApi($admin_details, $paypload);
+            if (!empty($response)) {
+
+                if ($response['status'] == 'success') {
+                    $plan_status = 'success';
+                } else if ($response['status'] == 'fail') {
+                    $plan_status = 'fail';
+                } else if ($response['status'] == 'process') {
+                    $plan_status = 'process';
+                } else {
+                    $plan_status = 'process';
+                }
+            } else {
+                $plan_status = null;
+            }
+            return $plan_status;
+        } else {
+            return 'fail';
+        }
+    }
+    public static function Hollatag($data)
+    {
+        if (DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->count() == 1) {
+            $sendRequest = DB::table('bulksms')->where(['username' => $data['username'], 'transid' => $data['transid']])->first();
+            $adex_api = DB::table('other_api')->first();
+
+            $request = array(
+                "user" => $adex_api->hollatag_username,
+                "pass" => $adex_api->hollatag_password,
+                "from" => $sendRequest->sender_name,
+                "to" => $sendRequest->correct_number,
+                "msg" => $sendRequest->message,
+                "type" => 0,
+            );
+
+            $url = 'https://sms.hollatags.com/api/send/';  //this is the url of the gateway's interface
+
+            $ch = curl_init(); //initialize curl handle
+            curl_setopt($ch, CURLOPT_URL, $url); //set the url
+            curl_setopt($ch, CURLOPT_POSTFIELDS,  http_build_query($request)); //set the POST variables
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //return as a variable
+            curl_setopt($ch, CURLOPT_POST, 1); //set POST method
+
+            $response_sms = curl_exec($ch);      // grab URL and pass it to the browser. Run the whole process and return the response
+            curl_close($ch); //close the curl handle
+            if (!empty($response_sms)) {
+                if ($response_sms == "sent") {
+                    return 'success';
+                } else {
+                    return 'fail';
+                }
+            } else {
+                return 'proccess';
+            }
+        } else {
+            return 'fail';
+        }
+    }
+}
