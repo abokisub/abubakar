@@ -38,10 +38,38 @@ class AppController extends Controller
             || config('adex.device_key') === $request->header('Authorization')
             || in_array($fullUrl, $allowedOrigins)) {
             try {
-                $core = $this->core();
-                $feature = $this->feature();
-                $general = $this->general();
-                $bank = DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first();
+                $core = null;
+                $feature = [];
+                $general = null;
+                $bank = null;
+                
+                try {
+                    $core = $this->core();
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to get core settings: ' . $e->getMessage());
+                }
+                
+                try {
+                    $feature = $this->feature();
+                    if (!$feature) {
+                        $feature = [];
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to get features: ' . $e->getMessage());
+                    $feature = [];
+                }
+                
+                try {
+                    $general = $this->general();
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to get general settings: ' . $e->getMessage());
+                }
+                
+                try {
+                    $bank = DB::table('adex_key')->select('account_number', 'account_name', 'bank_name', 'min', 'max')->first();
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to get bank details: ' . $e->getMessage());
+                }
                 
                 return response()->json([
                     'status' => 'success',
@@ -58,8 +86,12 @@ class AppController extends Controller
                 ]);
                 return response()->json([
                     'status' => false,
-                    'message' => 'An error occurred. Please try again later.'
-                ])->setStatusCode(500);
+                    'message' => 'An error occurred. Please try again later.',
+                    'setting' => null,
+                    'feature' => [],
+                    'general' => null,
+                    'bank' => null
+                ])->setStatusCode(200); // Return 200 with error status to prevent frontend crashes
             }
         } else {
             \Log::warning('System endpoint origin mismatch', [

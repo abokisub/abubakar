@@ -652,8 +652,28 @@ class AuthController extends Controller
         $allowedOrigins = array_filter(array_map('trim', explode(',', config('adex.app_key', ''))));
         $origin = $request->headers->get('origin');
         $originNormalized = rtrim($origin ?: '', '/');
+        $referer = $request->headers->get('referer');
+        $host = $request->getHost();
+        $scheme = $request->getScheme();
+        $fullUrl = $scheme . '://' . $host;
         
-        if (in_array($originNormalized, $allowedOrigins) || config('adex.device_key') === $request->header('Authorization')) {
+        // Check if request is from same origin (no Origin header for same-origin requests)
+        $isSameOrigin = empty($origin) && $referer && strpos($referer, $fullUrl) === 0;
+        
+        // Also check if the referer matches any allowed origin
+        $refererMatches = false;
+        if ($referer) {
+            $refererUrl = parse_url($referer, PHP_URL_SCHEME) . '://' . parse_url($referer, PHP_URL_HOST);
+            $refererNormalized = rtrim($refererUrl ?: '', '/');
+            $refererMatches = in_array($refererNormalized, $allowedOrigins);
+        }
+        
+        // Allow if: origin matches, referer matches, same-origin request, or device key matches
+        if (in_array($originNormalized, $allowedOrigins) 
+            || $refererMatches 
+            || $isSameOrigin 
+            || config('adex.device_key') === $request->header('Authorization')
+            || in_array($fullUrl, $allowedOrigins)) {
             //our login function over here
             $validator = Validator::make($request->all(), [
                 'username' => 'required|string',
